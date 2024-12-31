@@ -113,6 +113,9 @@ class Blackjack(BaseGame):
                 player_value = self.calculate_hand_value(player.get_hand())
                 if player_value <= 21:
                     player.update_score(1)  # Award 1 point for winning
+                    TerminalUI.display_winner(player, "Blackjack", 
+                                           dealer_hand=self.dealer_hand,
+                                           hand_value=player_value)
                     return player
                     
         # Find highest hand that beats dealer
@@ -127,5 +130,8 @@ class Blackjack(BaseGame):
                 
         if best_player:
             best_player.update_score(1)  # Award 1 point for winning
+            TerminalUI.display_winner(best_player, "Blackjack", 
+                                    dealer_hand=self.dealer_hand,
+                                    hand_value=best_value)
             
         return best_player

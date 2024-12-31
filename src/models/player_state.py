@@ -2,11 +2,12 @@ from typing import List
 from .card import Card
 
 class PlayerState:
-    def __init__(self, id: str, name: str):
+    def __init__(self, id: str, name: str, initial_bankroll: int = 1000):
         self.id = id
         self.name = name
         self._hand: List[Card] = []
         self._score: int = 0
+        self.bankroll: int = initial_bankroll
 
     def add_to_hand(self, cards: List[Card]) -> None:
         """Add cards to player's hand"""
@@ -37,3 +38,11 @@ class PlayerState:
     def get_score(self) -> int:
         """Get player's current score"""
         return self._score 
+
+    def update_bankroll(self, amount: int) -> None:
+        """Update player's bankroll"""
+        self.bankroll += amount
+
+    def get_bankroll(self) -> int:
+        """Get player's current bankroll"""
+        return self.bankroll 

@@ -41,9 +41,10 @@ def main():
         num_players = get_num_players(game_choice)
         
         # Initialize the chosen game
-        if game_choice == '1':
-            game = Poker(num_players)
-            print("\nStarting Poker game...")
+        if game_choice == '1':  # Poker
+            initial_bankroll = TerminalUI.get_initial_bankroll()
+            game = Poker(num_players, initial_bankroll)
+            print(f"\nStarting Poker game with ${initial_bankroll} bankroll...")
         elif game_choice == '2':
             game = Blackjack(num_players)
             print("\nStarting Blackjack game...")
@@ -59,7 +60,6 @@ def main():
                 
                 winner = game.check_win_condition()
                 if winner:
-                    print(f"\nGame Over! {winner.name} wins!")
                     game.game_state.set_phase(GamePhase.COMPLETE)
                 else:
                     game.game_state.next_turn()

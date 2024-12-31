@@ -153,3 +153,30 @@ class TerminalUI:
                 return PlayerAction(PlayerActionType.QUIT)
             else:
                 print("Invalid choice") 
+
+    @staticmethod
+    def get_initial_bankroll() -> int:
+        while True:
+            try:
+                amount = int(input("\nEnter initial bankroll for all players ($): "))
+                if amount > 0:
+                    return amount
+                print("Please enter a positive amount")
+            except ValueError:
+                print("Please enter a valid number")
+
+    @staticmethod
+    def display_winner(winner: PlayerState, game_type: str, **kwargs) -> None:
+        print(f"\n{winner.name} wins!")
+        print(f"Winning hand:", end=" ")
+        TerminalUI.display_cards(winner.get_hand())
+        
+        if game_type == "Poker":
+            print(f"Community cards:", end=" ")
+            TerminalUI.display_cards(kwargs.get('community_cards', []))
+            print(f"Final pot: ${kwargs.get('pot', 0)}")
+            print(f"Remaining bankroll: ${winner.get_bankroll()}")
+        elif game_type == "Blackjack":
+            print(f"Dealer's hand:", end=" ")
+            TerminalUI.display_cards(kwargs.get('dealer_hand', []))
+            print(f"Hand value: {kwargs.get('hand_value', 0)}") 
