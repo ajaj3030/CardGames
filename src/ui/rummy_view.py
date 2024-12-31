@@ -17,6 +17,7 @@ class RummyView(GameView):
             'discard': pygame.Rect(350, 650, 100, 40),
             'declare_set': pygame.Rect(470, 650, 120, 40),
             'declare_run': pygame.Rect(610, 650, 120, 40),
+            'quit': pygame.Rect(750, 650, 100, 40),
         }
         
         self.selected_cards: List[Card] = []
@@ -86,23 +87,19 @@ class RummyView(GameView):
         # Check button clicks
         for action, rect in self.buttons.items():
             if self.ui.is_button_clicked(rect, pos):
-                if action == 'draw_deck':
+                if action == 'quit':
+                    return PlayerAction(PlayerActionType.QUIT)
+                elif action == 'draw_deck':
                     return PlayerAction(PlayerActionType.DRAW_DECK)
                 elif action == 'draw_discard':
                     return PlayerAction(PlayerActionType.DRAW_DISCARD)
                 elif action == 'discard':
                     if len(self.selected_cards) == 1:
-                        action = PlayerAction(PlayerActionType.DISCARD, cards=self.selected_cards.copy())
-                        self.selected_cards.clear()
-                        return action
+                        return PlayerAction(PlayerActionType.DISCARD, cards=self.selected_cards)
                 elif action == 'declare_set':
                     if len(self.selected_cards) >= 3:
-                        action = PlayerAction(PlayerActionType.DECLARE_SET, cards=self.selected_cards.copy())
-                        self.selected_cards.clear()
-                        return action
+                        return PlayerAction(PlayerActionType.DECLARE_SET, cards=self.selected_cards)
                 elif action == 'declare_run':
                     if len(self.selected_cards) >= 3:
-                        action = PlayerAction(PlayerActionType.DECLARE_RUN, cards=self.selected_cards.copy())
-                        self.selected_cards.clear()
-                        return action
+                        return PlayerAction(PlayerActionType.DECLARE_RUN, cards=self.selected_cards)
         return None 

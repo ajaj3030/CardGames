@@ -15,6 +15,7 @@ class PokerView(GameView):
             'call': pygame.Rect(50, 650, 100, 40),
             'raise': pygame.Rect(170, 650, 100, 40),
             'fold': pygame.Rect(290, 650, 100, 40),
+            'quit': pygame.Rect(410, 650, 100, 40),
         }
         
         self.raise_amount = 0
@@ -65,7 +66,9 @@ class PokerView(GameView):
         """Handle mouse clicks"""
         for action, rect in self.buttons.items():
             if self.ui.is_button_clicked(rect, pos):
-                if action == 'call':
+                if action == 'quit':
+                    return PlayerAction(PlayerActionType.QUIT)
+                elif action == 'call':
                     return PlayerAction(PlayerActionType.CALL)
                 elif action == 'fold':
                     return PlayerAction(PlayerActionType.FOLD)

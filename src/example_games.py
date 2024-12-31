@@ -7,6 +7,7 @@ from src.ui.pygame_ui import PygameUI
 from src.ui.poker_view import PokerView
 from src.ui.blackjack_view import BlackjackView
 from src.ui.rummy_view import RummyView
+from src.models.player_action import PlayerActionType
 import pygame
 
 def get_game_choice() -> str:
@@ -42,7 +43,7 @@ def play_poker_gui(num_players: int, initial_bankroll: int) -> None:
     view = PokerView(ui)
     game = Poker(num_players, initial_bankroll)
     
-    while view.running and game.game_state.get_phase() != GamePhase.COMPLETE:
+    while view.running:
         current_player = game.game_state.get_current_player()
         
         if current_player.id == 'p0':  # Human player
@@ -55,13 +56,16 @@ def play_poker_gui(num_players: int, initial_bankroll: int) -> None:
             
             action = view.run_frame(game_state)
             if action:
+                if action.action_type == PlayerActionType.QUIT:
+                    break
                 game.play_turn(current_player, action)
         else:
             game._play_ai_turn(current_player)
             
         winner = game.check_win_condition()
-        if winner:
-            game.game_state.set_phase(GamePhase.COMPLETE)
+        if winner and len([p for p in game.game_state.get_players() if p.get_bankroll() > 0]) <= 1:
+            # Only quit if someone has won all the money
+            break
             
     pygame.quit()
 
@@ -70,7 +74,7 @@ def play_blackjack_gui(num_players: int) -> None:
     view = BlackjackView(ui)
     game = Blackjack(num_players)
     
-    while view.running and game.game_state.get_phase() != GamePhase.COMPLETE:
+    while view.running:
         current_player = game.game_state.get_current_player()
         
         if current_player.id == 'p0':  # Human player
@@ -83,6 +87,8 @@ def play_blackjack_gui(num_players: int) -> None:
             
             action = view.run_frame(game_state)
             if action:
+                if action.action_type == PlayerActionType.QUIT:
+                    break
                 game.play_turn(current_player)
         else:
             game._play_ai_turn(current_player)
@@ -98,7 +104,8 @@ def play_blackjack_gui(num_players: int) -> None:
             }
             view.draw(game_state)
             pygame.time.wait(3000)  # Show final state for 3 seconds
-            game.game_state.set_phase(GamePhase.COMPLETE)
+            # Reset for next round instead of ending
+            game = Blackjack(num_players)
             
     pygame.quit()
 
@@ -107,7 +114,7 @@ def play_rummy_gui(num_players: int) -> None:
     view = RummyView(ui)
     game = Rummy(num_players)
     
-    while view.running and game.game_state.get_phase() != GamePhase.COMPLETE:
+    while view.running:
         current_player = game.game_state.get_current_player()
         
         if current_player.id == 'p0':  # Human player
@@ -119,13 +126,19 @@ def play_rummy_gui(num_players: int) -> None:
             
             action = view.run_frame(game_state)
             if action:
+                if action.action_type == PlayerActionType.QUIT:
+                    break
                 game.play_turn(current_player)
         else:
             game._play_ai_turn(current_player)
             
         winner = game.check_win_condition()
         if winner:
-            game.game_state.set_phase(GamePhase.COMPLETE)
+            # Show winner state
+            view.draw(game_state)
+            pygame.time.wait(3000)  # Show final state for 3 seconds
+            # Reset for next round instead of ending
+            game = Rummy(num_players)
             
     pygame.quit()
 

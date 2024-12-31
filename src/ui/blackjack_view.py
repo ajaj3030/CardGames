@@ -14,6 +14,7 @@ class BlackjackView(GameView):
         self.buttons = {
             'hit': pygame.Rect(50, 650, 100, 40),
             'stand': pygame.Rect(170, 650, 100, 40),
+            'quit': pygame.Rect(290, 650, 100, 40),
         }
         
     def draw_dealer_hand(self, dealer_hand: List[Card], hide_hole_card: bool = True) -> None:
@@ -52,7 +53,9 @@ class BlackjackView(GameView):
         """Handle mouse clicks"""
         for action, rect in self.buttons.items():
             if self.ui.is_button_clicked(rect, pos):
-                if action == 'hit':
+                if action == 'quit':
+                    return PlayerAction(PlayerActionType.QUIT)
+                elif action == 'hit':
                     return PlayerAction(PlayerActionType.HIT)
                 elif action == 'stand':
                     return PlayerAction(PlayerActionType.STAND)
