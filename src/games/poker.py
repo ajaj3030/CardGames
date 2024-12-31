@@ -116,13 +116,16 @@ class Poker(BaseGame):
         else:
             return PokerHand.HIGH_CARD
         
-    def play_turn(self, player: PlayerState) -> None:
+    def play_turn(self, player: PlayerState, action: Optional[PlayerAction] = None) -> None:
         """Execute a betting round for the player"""
         if not self.round_active or player.get_bankroll() <= 0:
             return
 
         if player.id == 'p0':  # Human player
-            self._play_human_turn(player)
+            if action:
+                self._handle_player_action(player, action)
+            else:
+                self._play_human_turn(player)
         else:  # AI player
             self._play_ai_turn(player)
             
@@ -131,13 +134,8 @@ class Poker(BaseGame):
         if all(p.get_score() == self.current_bet for p in active_players):
             self._advance_betting_round()
 
-    def _play_human_turn(self, player: PlayerState) -> None:
-        """Handle human player's turn"""
-        TerminalUI.display_poker_state(player, self.community_cards, self.pot)
-        print(f"Your bankroll: ${player.get_bankroll()}")
-        print(f"Current bet: ${self.current_bet}")
-        action = TerminalUI.get_poker_action()
-        
+    def _handle_player_action(self, player: PlayerState, action: PlayerAction) -> None:
+        """Handle a player's action"""
         if action.action_type == PlayerActionType.QUIT:
             self.game_state.set_phase(GamePhase.COMPLETE)
             return
@@ -149,7 +147,6 @@ class Poker(BaseGame):
             call_amount = self.current_bet - player.get_score()
             if call_amount > player.get_bankroll():
                 print("Not enough funds to call!")
-                self._play_human_turn(player)
                 return
             self.pot += call_amount
             player.update_score(call_amount)
@@ -159,11 +156,9 @@ class Poker(BaseGame):
             raise_total = action.amount
             if raise_total <= self.current_bet:
                 print("Raise must be greater than current bet")
-                self._play_human_turn(player)
                 return
             if raise_total > player.get_bankroll() + player.get_score():
                 print("Not enough funds to raise!")
-                self._play_human_turn(player)
                 return
             raise_amount = raise_total - player.get_score()
             self.pot += raise_amount
@@ -171,6 +166,14 @@ class Poker(BaseGame):
             player.update_score(raise_amount)
             player.update_bankroll(-raise_amount)
             print(f"{player.name} raises to ${raise_total}")
+
+    def _play_human_turn(self, player: PlayerState) -> None:
+        """Handle human player's turn through terminal"""
+        TerminalUI.display_poker_state(player, self.community_cards, self.pot)
+        print(f"Your bankroll: ${player.get_bankroll()}")
+        print(f"Current bet: ${self.current_bet}")
+        action = TerminalUI.get_poker_action()
+        self._handle_player_action(player, action)
 
     def _play_ai_turn(self, player: PlayerState) -> None:
         """Handle AI player's turn"""
