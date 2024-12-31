@@ -1,9 +1,11 @@
 from typing import List, Optional, Set
-from ..models.base_game import BaseGame
-from ..models.card import Card
-from ..models.player_state import PlayerState
-from ..models.game_state import GamePhase
-from ..models.deck import Deck
+from src.models.base_game import BaseGame
+from src.models.card import Card
+from src.models.player_state import PlayerState
+from src.models.game_state import GamePhase
+from src.models.deck import Deck
+from src.ui.terminal_ui import TerminalUI
+from src.models.player_action import PlayerAction, PlayerActionType
 
 class Rummy(BaseGame):
     def __init__(self, num_players: int):
@@ -12,6 +14,7 @@ class Rummy(BaseGame):
         super().__init__(num_players)
         self.discard_pile: List[Card] = []
         self.deal_initial_cards()
+        self.has_drawn = False  # Track if player has drawn this turn
         
     def setup_deck(self) -> None:
         """Setup a standard 52-card deck"""
@@ -55,7 +58,58 @@ class Rummy(BaseGame):
         
     def play_turn(self, player: PlayerState) -> None:
         """Execute a turn for the given player"""
-        # Draw phase - either from deck or discard pile
+        if player.id == 'p0':  # Human player
+            self._play_human_turn(player)
+        else:  # AI player
+            self._play_ai_turn(player)
+            
+    def _play_human_turn(self, player: PlayerState) -> None:
+        """Handle human player's turn"""
+        self.has_drawn = False
+        
+        while True:
+            TerminalUI.display_rummy_state(player, self.discard_pile)
+            action = TerminalUI.get_rummy_action(player, can_draw_discard=not self.has_drawn and bool(self.discard_pile))
+            
+            if action.action_type == PlayerActionType.QUIT:
+                self.game_state.set_phase(GamePhase.COMPLETE)
+                return
+                
+            if not self.has_drawn:
+                if action.action_type == PlayerActionType.DRAW_DECK:
+                    deck = self.game_state.get_deck('main')
+                    if deck:
+                        player.add_to_hand(deck.draw(1))
+                        self.has_drawn = True
+                elif action.action_type == PlayerActionType.DRAW_DISCARD:
+                    if self.discard_pile:
+                        player.add_to_hand([self.discard_pile.pop()])
+                        self.has_drawn = True
+            
+            if self.has_drawn:
+                if action.action_type == PlayerActionType.DISCARD:
+                    if action.cards:
+                        removed = player.remove_from_hand([action.cards[0].id])
+                        self.discard_pile.extend(removed)
+                        return
+                elif action.action_type == PlayerActionType.DECLARE_SET:
+                    if self.is_set(action.cards):
+                        print("Valid set!")
+                        for card in action.cards:
+                            player.remove_from_hand([card.id])
+                    else:
+                        print("Invalid set!")
+                elif action.action_type == PlayerActionType.DECLARE_RUN:
+                    if self.is_run(action.cards):
+                        print("Valid run!")
+                        for card in action.cards:
+                            player.remove_from_hand([card.id])
+                    else:
+                        print("Invalid run!")
+            
+    def _play_ai_turn(self, player: PlayerState) -> None:
+        """Execute a turn for the AI player"""
+        # Draw phase
         deck = self.game_state.get_deck('main')
         if deck and len(deck.draw(1)) > 0:  # AI always draws from deck
             player.add_to_hand(deck.draw(1))

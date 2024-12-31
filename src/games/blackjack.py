@@ -1,9 +1,11 @@
 from typing import List, Optional
-from ..models.base_game import BaseGame
-from ..models.card import Card
-from ..models.player_state import PlayerState
-from ..models.game_state import GamePhase
-from ..models.deck import Deck
+from src.models.base_game import BaseGame
+from src.models.card import Card
+from src.models.player_state import PlayerState
+from src.models.game_state import GamePhase
+from src.models.deck import Deck
+from ..ui.terminal_ui import TerminalUI
+from ..models.player_action import PlayerActionType
 
 class Blackjack(BaseGame):
     def __init__(self, num_players: int):
@@ -61,8 +63,33 @@ class Blackjack(BaseGame):
         
     def play_turn(self, player: PlayerState) -> None:
         """Execute a turn for the given player"""
-        # Player decisions: hit or stand
-        # This is a simplified version - you'd want to add split and double down
+        if player.id == 'p0':  # Human player
+            self._play_human_turn(player)
+        else:  # AI player
+            self._play_ai_turn(player)
+            
+    def _play_human_turn(self, player: PlayerState) -> None:
+        """Handle human player's turn"""
+        while True:
+            TerminalUI.display_blackjack_state(player, self.dealer_hand)
+            action = TerminalUI.get_blackjack_action()
+            
+            if action.action_type == PlayerActionType.QUIT:
+                self.game_state.set_phase(GamePhase.COMPLETE)
+                return
+                
+            if action.action_type == PlayerActionType.HIT:
+                deck = self.game_state.get_deck('main')
+                if deck:
+                    player.add_to_hand(deck.draw(1))
+                    if self.calculate_hand_value(player.get_hand()) > 21:
+                        print("Bust!")
+                        return
+            elif action.action_type == PlayerActionType.STAND:
+                return
+                
+    def _play_ai_turn(self, player: PlayerState) -> None:
+        """Handle AI player's turn"""
         hand_value = self.calculate_hand_value(player.get_hand())
         
         if hand_value < 17:  # Basic AI strategy

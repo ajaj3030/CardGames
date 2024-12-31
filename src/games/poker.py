@@ -1,9 +1,11 @@
 from typing import List, Dict, Optional
-from ..models.base_game import BaseGame
-from ..models.card import Card
-from ..models.player_state import PlayerState
-from ..models.game_state import GamePhase
-from ..models.deck import Deck
+from src.models.base_game import BaseGame
+from src.models.card import Card
+from src.models.player_state import PlayerState
+from src.models.game_state import GamePhase
+from src.models.deck import Deck
+from src.ui.terminal_ui import TerminalUI
+from src.models.player_action import PlayerAction, PlayerActionType
 
 class PokerHand:
     HIGH_CARD = 0
@@ -26,6 +28,7 @@ class Poker(BaseGame):
         self.community_cards: List[Card] = []
         self.current_bet = 0
         self.deal_initial_cards()
+        self.betting_round = 0  # 0: pre-flop, 1: flop, 2: turn, 3: river
         
     def setup_deck(self) -> None:
         """Setup a standard 52-card deck"""
@@ -102,11 +105,42 @@ class Poker(BaseGame):
         
     def play_turn(self, player: PlayerState) -> None:
         """Execute a betting round for the player"""
-        # Simple AI logic for demonstration
-        if not isinstance(player, PlayerState):
+        if player.id == 'p0':  # Human player
+            self._play_human_turn(player)
+        else:  # AI player
+            self._play_ai_turn(player)
+            
+        # After each round of betting, deal community cards
+        if all(p.get_score() == self.current_bet for p in self.game_state.get_players()):
+            self._advance_betting_round()
+            
+    def _play_human_turn(self, player: PlayerState) -> None:
+        """Handle human player's turn"""
+        TerminalUI.display_poker_state(player, self.community_cards, self.pot)
+        action = TerminalUI.get_poker_action()
+        
+        if action.action_type == PlayerActionType.QUIT:
+            self.game_state.set_phase(GamePhase.COMPLETE)
             return
             
-        # AI will either call, raise, or fold based on hand strength
+        if action.action_type == PlayerActionType.FOLD:
+            self.game_state._players.remove(player)
+        elif action.action_type == PlayerActionType.CALL:
+            call_amount = self.current_bet - player.get_score()
+            self.pot += call_amount
+            player.update_score(-call_amount)
+        elif action.action_type == PlayerActionType.RAISE:
+            raise_amount = action.amount
+            if raise_amount > self.current_bet:
+                self.pot += raise_amount
+                self.current_bet = raise_amount
+                player.update_score(-raise_amount)
+            else:
+                print("Raise must be greater than current bet")
+                self._play_human_turn(player)
+                
+    def _play_ai_turn(self, player: PlayerState) -> None:
+        """Handle AI player's turn"""
         hand_value = self.evaluate_hand(player)
         
         if hand_value >= PokerHand.THREE_OF_A_KIND:
@@ -117,12 +151,21 @@ class Poker(BaseGame):
             player.update_score(-raise_amount)
         elif hand_value >= PokerHand.PAIR:
             # Medium hand - call
-            self.pot += self.current_bet
-            player.update_score(-self.current_bet)
+            call_amount = self.current_bet - player.get_score()
+            self.pot += call_amount
+            player.update_score(-call_amount)
         else:
             # Weak hand - fold
             self.game_state._players.remove(player)
             
+    def _advance_betting_round(self) -> None:
+        """Deal community cards based on betting round"""
+        if self.betting_round == 0:  # Deal flop
+            self.deal_community_cards(3)
+        elif self.betting_round in [1, 2]:  # Deal turn or river
+            self.deal_community_cards(1)
+        self.betting_round += 1
+        
     def check_win_condition(self) -> Optional[PlayerState]:
         """Check for a winner - typically after all betting rounds"""
         if len(self.game_state.get_players()) == 1:
